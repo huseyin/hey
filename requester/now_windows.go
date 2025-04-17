@@ -39,7 +39,7 @@ var (
 // queryPerformanceFrequency returns frequency in ticks per second
 func queryPerformanceFrequency() int64 {
 	var freq int64
-	r1, _, _ := syscall.Syscall(queryPerformanceFrequencyProc.Addr(), 1, uintptr(unsafe.Pointer(&freq)), 0, 0)
+	r1, _, _ := syscall.SyscallN(queryPerformanceFrequencyProc.Addr(), 1, uintptr(unsafe.Pointer(&freq)), 0, 0)
 	if r1 == 0 {
 		panic("call failed")
 	}

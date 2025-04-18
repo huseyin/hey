@@ -63,6 +63,8 @@ var (
 	disableKeepAlives  = flag.Bool("disable-keepalive", false, "")
 	disableRedirects   = flag.Bool("disable-redirects", false, "")
 	proxyAddr          = flag.String("x", "", "")
+
+	live = flag.Bool("live", false, "")
 )
 
 var usage = `Usage: hey [options...] <url>
@@ -100,11 +102,13 @@ Options:
   -disable-redirects    Disable following of HTTP redirects
   -cpus                 Number of used cpu cores.
                         (default for current machine is %d cores)
+  -live                 Stream output. If set, the output is dumped as soon as
+                        the response is received. Only compatible with CSV output for now.
 `
 
 func main() {
 	flag.Usage = func() {
-		fmt.Fprint(os.Stderr, fmt.Sprintf(usage, runtime.NumCPU()))
+		fmt.Fprintf(os.Stderr, usage, runtime.NumCPU())
 	}
 
 	var hs headerSlice
@@ -233,6 +237,7 @@ func main() {
 		H2:                 *h2,
 		ProxyAddr:          proxyURL,
 		Output:             *output,
+		Live:               *live,
 	}
 	w.Init()
 

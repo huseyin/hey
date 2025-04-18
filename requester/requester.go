@@ -33,19 +33,6 @@ import (
 const maxResult = 1000000
 const maxIdleConn = 500
 
-type result struct {
-	err           error
-	statusCode    int
-	offset        time.Duration
-	duration      time.Duration
-	connDuration  time.Duration // connection setup(DNS lookup + Dial up) duration
-	dnsDuration   time.Duration // dns lookup duration
-	reqDuration   time.Duration // request "write" duration
-	resDuration   time.Duration // response "read" duration
-	delayDuration time.Duration // delay between response and request
-	contentLength int64
-}
-
 type Work struct {
 	// Request is the request to be made.
 	Request *http.Request
@@ -84,6 +71,10 @@ type Work struct {
 	// output will be dumped as a csv stream.
 	Output string
 
+	// Live is an option to stream the output. If set, the output is printed
+	// as soon as the response is received. Only compatible with CSV output.
+	Live bool
+
 	// ProxyAddr is the address of HTTP proxy server in the format on "host:port".
 	// Optional.
 	ProxyAddr *url.URL
@@ -120,6 +111,8 @@ func (b *Work) Run() {
 	b.Init()
 	b.start = now()
 	b.report = newReport(b.writer(), b.results, b.Output, b.N)
+	b.report.live = b.Live
+
 	// Run the reporter first, it polls the result channel until it is closed.
 	go func() {
 		runReporter(b.report)

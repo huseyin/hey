@@ -59,6 +59,7 @@ type report struct {
 	sizeTotal int64
 	numRes    int64
 	output    string
+	live      bool
 
 	w io.Writer
 }
@@ -107,6 +108,10 @@ func runReporter(r *report) {
 			if res.contentLength > 0 {
 				r.sizeTotal += res.contentLength
 			}
+
+			if r.output == "csv" && r.live {
+				r.printResult(res)
+			}
 		}
 	}
 	// Signal reporter is done.
@@ -122,17 +127,40 @@ func (r *report) finalize(total time.Duration) {
 	r.avgDNS = r.avgDNS / float64(len(r.lats))
 	r.avgReq = r.avgReq / float64(len(r.lats))
 	r.avgRes = r.avgRes / float64(len(r.lats))
-	r.print()
+
+	if r.output == "csv" {
+		if !r.live {
+			r.print()
+		}
+	} else {
+		r.print()
+	}
 }
 
 func (r *report) print() {
 	buf := &bytes.Buffer{}
+
 	if err := newTemplate(r.output).Execute(buf, r.snapshot()); err != nil {
 		log.Println("error:", err.Error())
 		return
 	}
-	r.printf(buf.String())
 
+	r.printf("%s", buf.String())
+	r.printf("\n")
+}
+
+func (r *report) printResult(res *result) {
+	if res == nil {
+		return
+	}
+
+	buf := &bytes.Buffer{}
+	if err := newTemplate(r.output).Execute(buf, res.report()); err != nil {
+		log.Println("error:", err.Error())
+		return
+	}
+
+	r.printf("%s", buf.String())
 	r.printf("\n")
 }
 
@@ -265,6 +293,36 @@ func (r *report) histogram() []Bucket {
 		}
 	}
 	return res
+}
+
+type result struct {
+	err           error
+	statusCode    int
+	offset        time.Duration
+	duration      time.Duration
+	connDuration  time.Duration // connection setup(DNS lookup + Dial up) duration
+	dnsDuration   time.Duration // dns lookup duration
+	reqDuration   time.Duration // request "write" duration
+	resDuration   time.Duration // response "read" duration
+	delayDuration time.Duration // delay between response and request
+	contentLength int64
+}
+
+func (r *result) report() Report {
+	if r == nil {
+		return Report{}
+	}
+
+	return Report{
+		ConnLats:    []float64{r.connDuration.Seconds()},
+		DnsLats:     []float64{r.dnsDuration.Seconds()},
+		ReqLats:     []float64{r.reqDuration.Seconds()},
+		ResLats:     []float64{r.resDuration.Seconds()},
+		DelayLats:   []float64{r.delayDuration.Seconds()},
+		Lats:        []float64{r.duration.Seconds()},
+		Offsets:     []float64{r.offset.Seconds()},
+		StatusCodes: []int{r.statusCode},
+	}
 }
 
 type Report struct {

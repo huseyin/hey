@@ -28,7 +28,7 @@ import (
 	"strings"
 	"time"
 
-	"hey/requester"
+	"github.com/huseyin/hey/requester"
 )
 
 const (

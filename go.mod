@@ -1,4 +1,4 @@
-module hey
+module github.com/huseyin/hey
 
 go 1.24.2
 

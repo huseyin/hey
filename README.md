@@ -78,7 +78,12 @@ Usage
 
   This flag is **NEW** and allows you to stream output in real time, displaying each response as it's received. Note that this is only supported when using the `csv` format.
 
-For other options, please run `hey -h` to see the full list of available options.
+- For the full list of options, run:
+
+  ```bash
+  hey -h
+  ```
+
 
 License
 -------
